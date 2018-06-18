@@ -5,13 +5,14 @@ import RPi.GPIO as GPIO
 from time import sleep
 from subprocess import call
 GPIO.setmode(GPIO.BCM) # setup pinmode
-
+GPIO.setwarnings(False)
 
 from RPLCD.gpio import CharLCD
 from time import sleep
 import RPi.GPIO as GPIO
 lcd = CharLCD(cols=16, rows=2, pin_rs=26, pin_e=19, pins_data=[13, 6, 5, 11], numbering_mode=GPIO.BCM)
 lcd.clear()
+lcd.cursor_mode= "hide"
 lcd.write_string('SockMatcher 5000')
 lcd.cursor_pos =(1,0)
 lcd.write_string('Please wait')
@@ -28,6 +29,7 @@ motorBelt = 1
 motorTurntable = 2
 GPIO.setup(BUTTPIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(HOMEPIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(SHUTDOWNBUTTPIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 StepsPerSockTub = 158
 CurrentSockTubNum = 0
@@ -35,10 +37,10 @@ global camera
 camera = SockCamera()
 
 
-pink = [100, 20, 220]
-green = [44, 75, 52]
-yellow = [60, 150, 180]
-blue = [120, 70, 30]
+pink = [60, 20, 180]
+green = [40, 60, 50]
+yellow = [50, 115, 130]
+blue = [70, 20, 10]
 
 red_range = 35
 green_range = 35
@@ -119,8 +121,13 @@ def GoToSockTub(tubNum):
 #               motorEnable=14) as mot:
 lcd.clear()
 lcd.write_string('SockMatcher 5000')
+print ("homing")
 lcd.cursor_pos =(1,0)
-lcd.write_string('Press start')
+lcd.write_string('Homing...       ')
+waitForSock()
+homePlatter()
+lcd.cursor_pos =(1,0)
+lcd.write_string('Press start    ')
     
 while True:
     #print(camera.ReadSockColour())
@@ -131,6 +138,7 @@ while True:
         print ("homing")
         lcd.cursor_pos =(1,0)
         lcd.write_string('Homing...       ')
+        waitForSock()
         homePlatter()
         time_out = 0
         #GoToSockTub(4) #Go to waste tub
@@ -142,6 +150,8 @@ while True:
             waitForSock()
             time_out = time_out + 1
             if time_out > 15:
+                lcd.cursor_pos =(1,0)
+                lcd.write_string('Press start')
                 break
             
             current_colour = camera.ReadSockColour()
@@ -155,9 +165,24 @@ while True:
                     lcd.cursor_pos =(1,0)
                     lcd.write_string(colour_names[index] + " sock!")
                     GoToSockTub(index)
+                    waitForSock()
                     time_out = 0
+            if GPIO.input(SHUTDOWNBUTTPIN) == GPIO.LOW:
+                lcd.clear()
+                lcd.write_string('Shutting down')
+                lcd.cursor_pos =(1,0)
+                lcd.write_string('Wait 30 secsonds')
+                GPIO.cleanup()
+                camera.closeCamera()
+                call("sudo shutdown -h now", shell=True)
     
     elif GPIO.input(SHUTDOWNBUTTPIN) == GPIO.LOW:
+        lcd.clear()
+        lcd.write_string('Shutting down')
+        lcd.cursor_pos =(1,0)
+        lcd.write_string('Wait 30 secsonds')
+        GPIO.cleanup()
+        camera.closeCamera()
         call("sudo shutdown -h now", shell=True)
         
 GPIO.cleanup()

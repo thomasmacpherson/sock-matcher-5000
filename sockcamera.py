@@ -32,6 +32,8 @@ class SockCamera():
         self.camera.resolution = (320,240)
         self.camera.framerate = 24
         #print(stream.__dict__)
+    def closeCamera(self):
+        self.camera.close()
         
     def ReadSockColour(self):
         sleep(1)
