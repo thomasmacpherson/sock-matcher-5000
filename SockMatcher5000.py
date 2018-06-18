@@ -3,7 +3,7 @@ from sockcamera import SockCamera
 from sockmotor import SockMotor
 import RPi.GPIO as GPIO
 from time import sleep
-
+from subprocess import call
 GPIO.setmode(GPIO.BCM) # setup pinmode
 
 
@@ -11,9 +11,13 @@ from RPLCD.gpio import CharLCD
 from time import sleep
 import RPi.GPIO as GPIO
 lcd = CharLCD(cols=16, rows=2, pin_rs=26, pin_e=19, pins_data=[13, 6, 5, 11], numbering_mode=GPIO.BCM)
-
+lcd.clear()
+lcd.write_string('SockMatcher 5000')
+lcd.cursor_pos =(1,0)
+lcd.write_string('Please wait')
 
 BUTTPIN = 23
+SHUTDOWNBUTTPIN = 4
 HOMEPIN = 15
 
 # Motor direction
@@ -129,7 +133,7 @@ while True:
         lcd.write_string('Homing...       ')
         homePlatter()
         time_out = 0
-        GoToSockTub(4)
+        #GoToSockTub(4) #Go to waste tub
         
         while True:
             print("Waiting for sock")
@@ -150,25 +154,12 @@ while True:
                     lcd.write_string('SockMatcher 5000')
                     lcd.cursor_pos =(1,0)
                     lcd.write_string(colour_names[index] + " sock!")
-                    
-                    #if socks_count[index] < 2:
-                    #socks_count[index] = socks_count[index] + 1
                     GoToSockTub(index)
                     time_out = 0
-                    #else:
-                    #GoToSockTub(4)
-'''
- 
-#        sleep(2)
-#        GoToSockTub(4)
-#        
-        GoToSockTub(2)
-                
-    else:
-        # wait for sock
-        sleep(0.1) # wait a bit and check again
+    
+    elif GPIO.input(SHUTDOWNBUTTPIN) == GPIO.LOW:
+        call("sudo shutdown -h now", shell=True)
         
-       # '''
 GPIO.cleanup()
 
 
