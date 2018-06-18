@@ -7,6 +7,12 @@ from time import sleep
 GPIO.setmode(GPIO.BCM) # setup pinmode
 
 
+from RPLCD.gpio import CharLCD
+from time import sleep
+import RPi.GPIO as GPIO
+lcd = CharLCD(cols=16, rows=2, pin_rs=26, pin_e=19, pins_data=[13, 6, 5, 11], numbering_mode=GPIO.BCM)
+
+
 BUTTPIN = 23
 HOMEPIN = 15
 
@@ -25,12 +31,12 @@ global camera
 camera = SockCamera()
 
 
-pink = [160, 20, 245]
+pink = [100, 20, 220]
 green = [44, 75, 52]
 yellow = [60, 150, 180]
 blue = [120, 70, 30]
 
-red_range = 30
+red_range = 35
 green_range = 35
 blue_range = 35
 
@@ -107,7 +113,10 @@ def GoToSockTub(tubNum):
 #               stepCount=48,
 #               delay=.0208,
 #               motorEnable=14) as mot:
-
+lcd.clear()
+lcd.write_string('SockMatcher 5000')
+lcd.cursor_pos =(1,0)
+lcd.write_string('Press start')
     
 while True:
     #print(camera.ReadSockColour())
@@ -116,11 +125,20 @@ while True:
     if GPIO.input(BUTTPIN) == GPIO.LOW:
         socks_count = [0,0,0,0]
         print ("homing")
+        lcd.cursor_pos =(1,0)
+        lcd.write_string('Homing...       ')
         homePlatter()
+        time_out = 0
+        GoToSockTub(4)
         
         while True:
             print("Waiting for sock")
-            #waitForSock()
+            lcd.cursor_pos =(1,0)
+            lcd.write_string('Waiting for sock')
+            waitForSock()
+            time_out = time_out + 1
+            if time_out > 15:
+                break
             
             current_colour = camera.ReadSockColour()
             print(current_colour)
@@ -128,10 +146,15 @@ while True:
                 if (colour[0]-blue_range <= current_colour[0] <= colour[0]+blue_range) and (colour[1]-green_range <= current_colour[1] <= colour[1]+green_range) and (colour[2]-red_range <= current_colour[2] <= colour[2]+red_range):
                     print("colour match")
                     print(colour_names[index])
+                    lcd.clear()
+                    lcd.write_string('SockMatcher 5000')
+                    lcd.cursor_pos =(1,0)
+                    lcd.write_string(colour_names[index] + " sock!")
                     
                     #if socks_count[index] < 2:
                     #socks_count[index] = socks_count[index] + 1
                     GoToSockTub(index)
+                    time_out = 0
                     #else:
                     #GoToSockTub(4)
 '''
